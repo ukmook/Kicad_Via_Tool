@@ -56,57 +56,68 @@ class NetNameDialog(wx.Dialog):
             # Net Name
             hbox1 = wx.BoxSizer(wx.HORIZONTAL)
             st1 = wx.StaticText(self, label='Net Name')
+            st1.SetToolTip("Select the net name from the list. 'All' selects all nets.")
             hbox1.Add(st1, flag=wx.RIGHT, border=8)
-            self.net_name_combo = wx.ComboBox(self, choices=net_names)
-            self.net_name_combo.SetSelection(0)  # Select "All" by default
-            hbox1.Add(self.net_name_combo, proportion=1)
+            self.net_name_choice = wx.Choice(self, choices=net_names)
+            self.net_name_choice.SetSelection(0)  # Select "All" by default
+            self.net_name_choice.SetToolTip("Choose the net for which you want to select vias.")
+            hbox1.Add(self.net_name_choice, proportion=1)
             vbox.Add(hbox1, flag=wx.ALL | wx.EXPAND, border=5)
 
             # Zone Checkbox
             hbox2 = wx.BoxSizer(wx.HORIZONTAL)
             self.zone_checkbox = wx.CheckBox(self, label="Only under selected Zone")
             self.zone_checkbox.SetValue(True)
+            self.zone_checkbox.SetToolTip("Check this box to only select vias under the currently selected zone.")
             hbox2.Add(self.zone_checkbox, flag=wx.RIGHT, border=8)
             vbox.Add(hbox2, flag=wx.ALL | wx.EXPAND, border=5)
 
             # Min Size Drop-down
             hbox3 = wx.BoxSizer(wx.HORIZONTAL)
             st2 = wx.StaticText(self, label='Min Size (mm)')
+            st2.SetToolTip("Select the minimum via size (diameter) in millimeters.")
             hbox3.Add(st2, flag=wx.RIGHT, border=8)
-            self.min_size_combo = wx.ComboBox(self)
-            hbox3.Add(self.min_size_combo, proportion=1)
+            self.min_size_choice = wx.Choice(self)
+            self.min_size_choice.SetToolTip("Choose the smallest via size to include.")
+            hbox3.Add(self.min_size_choice, proportion=1)
             vbox.Add(hbox3, flag=wx.ALL | wx.EXPAND, border=5)
 
             # Max Size Drop-down
             hbox4 = wx.BoxSizer(wx.HORIZONTAL)
             st3 = wx.StaticText(self, label='Max Size (mm)')
+            st3.SetToolTip("Select the maximum via size (diameter) in millimeters.")
             hbox4.Add(st3, flag=wx.RIGHT, border=8)
-            self.max_size_combo = wx.ComboBox(self)
-            hbox4.Add(self.max_size_combo, proportion=1)
+            self.max_size_choice = wx.Choice(self)
+            self.max_size_choice.SetToolTip("Choose the largest via size to include.")
+            hbox4.Add(self.max_size_choice, proportion=1)
             vbox.Add(hbox4, flag=wx.ALL | wx.EXPAND, border=5)
 
             # Populate min and max sizes
             sizes = self.get_via_sizes(board)
-            self.min_size_combo.SetItems(sizes)
-            self.max_size_combo.SetItems(sizes)
-            self.min_size_combo.SetSelection(0)  # Select the smallest size
-            self.max_size_combo.SetSelection(len(sizes) - 1)  # Select the largest size
+            self.min_size_choice.SetItems(sizes)
+            self.min_size_choice.SetSelection(0)  # Select the smallest size
+            self.max_size_choice.SetItems(sizes)
+            self.max_size_choice.SetSelection(len(sizes) - 1)  # Select the largest size
             print(f"Sizes loaded: {sizes}")
 
             # Action Drop-down
             hbox5 = wx.BoxSizer(wx.HORIZONTAL)
             st4 = wx.StaticText(self, label='Action')
+            st4.SetToolTip("Select the action to perform on the selected vias.")
             hbox5.Add(st4, flag=wx.RIGHT, border=8)
             self.action_choice = wx.Choice(self, choices=["Highlight", "Delete", "Change Size"])
             self.action_choice.SetSelection(0)
+            self.action_choice.SetToolTip("Choose what to do with the selected vias.")
             hbox5.Add(self.action_choice, proportion=1)
             vbox.Add(hbox5, flag=wx.ALL | wx.EXPAND, border=5)
 
             # Via Sizes Drop-down
             hbox6 = wx.BoxSizer(wx.HORIZONTAL)
             st5 = wx.StaticText(self, label='New Size')
+            st5.SetToolTip("Select the new size for vias if 'Change Size' is selected.")
             hbox6.Add(st5, flag=wx.RIGHT, border=8)
             self.via_size_choice = wx.Choice(self)
+            self.via_size_choice.SetToolTip("Choose the new via size if changing size.")
             hbox6.Add(self.via_size_choice, proportion=1)
             vbox.Add(hbox6, flag=wx.ALL | wx.EXPAND, border=5)
 
@@ -117,18 +128,26 @@ class NetNameDialog(wx.Dialog):
             # Ok and Close buttons
             hbox7 = wx.BoxSizer(wx.HORIZONTAL)
             okButton = wx.Button(self, label='Ok')
+            okButton.SetToolTip("Click to execute the selected actions on the vias.")
             closeButton = wx.Button(self, label='Close')
+            closeButton.SetToolTip("Click to close the dialog without making changes.")
             hbox7.Add(okButton)
             hbox7.Add(closeButton, flag=wx.LEFT | wx.BOTTOM, border=5)
             vbox.Add(hbox7, flag=wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, border=10)
+            
+            # Additional static text
+            info_text = wx.StaticText(self, label="Vias will only be deleted on exit")
+            vbox.Add(info_text, flag=wx.ALL | wx.EXPAND, border=1)
+            info_text = wx.StaticText(self, label="if the action is chosen.")
+            vbox.Add(info_text, flag=wx.ALL | wx.EXPAND, border=1)
 
             self.SetSizer(vbox)
 
             okButton.Bind(wx.EVT_BUTTON, self.OnOk)
             closeButton.Bind(wx.EVT_BUTTON, self.OnClose)
 
-            self.SetSize((400, 500))
-            self.SetTitle('Select Vias by Net')
+            self.SetSize((350, 430))
+            self.SetTitle('Kicad Via Tool')
 
             # Center the dialog on the screen
             self.CenterOnScreen()
@@ -158,10 +177,10 @@ class NetNameDialog(wx.Dialog):
 
     def OnOk(self, e):
         try:
-            self.net_name = self.net_name_combo.GetValue()
+            self.net_name = self.net_name_choice.GetString(self.net_name_choice.GetSelection())
             self.use_zone = self.zone_checkbox.GetValue()
-            self.min_size = float(self.min_size_combo.GetValue().split('/')[0].strip())
-            self.max_size = float(self.max_size_combo.GetValue().split('/')[0].strip())
+            self.min_size = float(self.min_size_choice.GetString(self.min_size_choice.GetSelection()).split('/')[0].strip())
+            self.max_size = float(self.max_size_choice.GetString(self.max_size_choice.GetSelection()).split('/')[0].strip())
             self.action = self.action_choice.GetString(self.action_choice.GetSelection())
             if self.action == "Change Size":
                 via_size_str = self.via_size_choice.GetString(self.via_size_choice.GetSelection()).split('/')
